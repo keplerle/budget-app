@@ -1,0 +1,138 @@
+<div class="budget-page">
+  <div class="budget-card">
+    <h2>Calculateur de budget</h2>
+    <div class="budget-action">
+      <button class="button-action export-pdf" (click)="exportPDF()">Exporter en PDF</button>
+      <button class="button-action switch-theme" (click)="toggleTheme()">Mode clair / sombre</button>
+    </div>
+
+    <div class="budget-layout">
+      <div class="column left">
+
+        <div class="section-card">
+          <h2>Revenu & ajout de dépense</h2>
+          <h3>Revenus</h3>
+          <input type="number" [(ngModel)]="income" (ngModelChange)="saveToStorage()" placeholder="Revenu mensuel" />
+          <!-- revenu + formulaire ajout dépense -->
+          <h3>Ajouter une dépense</h3>
+          <input type="number" [(ngModel)]="expenseAmount" placeholder="Montant" />
+          <select [(ngModel)]="expenseCategory">
+            <option value="">Choisir une catégorie</option>
+            @for (c of categories; track c) {
+            <option [value]="c">{{ c }}</option>
+            }
+          </select>
+          <input type="date" [(ngModel)]="expenseDate" placeholder="Date" />
+          <button class="button-action add-expense" (click)="addExpense()">Ajouter</button>
+        </div>
+
+        <div class="section-card">
+          <h2>Catégories</h2>
+
+          <div class="category-add">
+            <input type="text" [(ngModel)]="newCategory" placeholder="Nouvelle catégorie">
+            <button class="button-action add-category" (click)="addCategory()">Ajouter</button>
+          </div>
+
+          <ul class="category-list">
+            @for (c of categories; track c) {
+            <li>
+              {{ c }}
+              <button class="delete-btn" (click)="removeCategory(c)">×</button>
+            </li>
+            }
+          </ul>
+        </div>
+      </div>
+
+      <div class="column right">
+        <!-- résumé + liste + graphique -->
+        <div id="pdf-content">
+
+          <div class="kpi-row">
+            <div class="kpi-card">
+              <h3>Dépenses</h3>
+              <p>{{ totalExpenses }} €</p>
+            </div>
+
+            <div class="kpi-card">
+              <h3>Solde</h3>
+              <p>{{ balance }} €</p>
+            </div>
+
+            <div class="kpi-card">
+              <h3>Transactions</h3>
+              <p>{{ filteredExpenses.length }}</p>
+            </div>
+          </div>
+
+          <div class="section-card">
+            <h2>Résumé</h2>
+            <h3>Total dépenses : {{ totalExpenses }} €</h3>
+            <h3>Solde restant : {{ balance }} €</h3>
+          </div>
+
+          <div class="section-card">
+            <h2>Dépenses</h2>
+
+            <h3>Filtrer par mois</h3>
+            <select [(ngModel)]="selectedMonth" (change)="updateFilter()">
+              <option value="">Tous les mois</option>
+              @for (m of months; track m) {
+              <option [value]="m.value">{{ m.label }}</option>
+              }
+            </select>
+            <ul>
+              @for(e of filteredExpenses; track e.id){
+              <li>
+                {{ e.category }} — {{ e.amount }} €
+                <button class="delete-btn" (click)="removeExpense($index)">×</button>
+              </li>
+              }
+            </ul>
+            <h3>Répartition par catégorie</h3>
+            <ul>
+              @for(cat of groupedExpensesArray; track cat[0]){
+              <li>
+                {{ cat[0] }} : {{ cat[1] }} €
+              </li>
+              }
+            </ul>
+          </div>
+
+          <div class="section-card">
+            <h2>Graphique des dépenses</h2>
+            <div class="chart-container">
+              <canvas id="expensesChart"></canvas>
+            </div>
+          </div>
+
+          <div class="section-card">
+            <h2>Évolution mensuelle</h2>
+            <div class="chart-container">
+              <canvas id="monthlyChart"></canvas>
+            </div>
+          </div>
+
+          <div class="section-card">
+            <h2>Évolution par catégorie</h2>
+
+            <div class="category-trend-filter">
+              <label>Catégorie :</label>
+              <select [(ngModel)]="selectedCategoryForTrend" (change)="renderCategoryTrendChart()">
+                <option value="">Choisir une catégorie</option>
+                @for (c of categories; track c) {
+                <option [value]="c">{{ c }}</option>
+                }
+              </select>
+            </div>
+
+            <div class="chart-container">
+              <canvas id="categoryTrendChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

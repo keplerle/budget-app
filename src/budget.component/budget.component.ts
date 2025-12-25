@@ -1,0 +1,432 @@
+import { Component } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { Chart, registerables } from 'chart.js';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
+Chart.register(...registerables);
+
+@Component({
+  selector: 'app-budget',
+  standalone: true,
+  templateUrl: './budget.component.html',
+  styleUrls: ['./budget.component.scss'],
+  imports: [FormsModule]
+
+})
+export class BudgetComponent {
+  categories: string[] = [];
+  income = 0;
+  expenseAmount = 0;
+  expenseCategory = '';
+  expenses: { id: number; amount: number; category: string, date: string }[] = [];
+  expenseDate: string = '';
+  selectedMonth = '';
+  chart: any;
+  monthlyChart: any;
+  categoryTrendChart: any;
+  isDark = true;
+  newCategory = '';
+  selectedCategoryForTrend = '';
+  private readonly STORAGE_KEY = 'budget-app-data';
+
+  constructor() {
+    this.loadFromStorage();
+    this.applyTheme();
+    const saved = localStorage.getItem('categories');
+    this.categories = saved ? JSON.parse(saved) : ['Logement', 'Nourriture', 'Transport', 'Loisirs'];
+
+  }
+
+  ngAfterViewInit() {
+    this.renderChart();
+    this.renderMonthlyChart();
+    this.renderCategoryTrendChart();
+  }
+
+  addCategory() {
+    const cat = this.newCategory.trim();
+    if (cat && !this.categories.includes(cat)) {
+      this.categories.push(cat);
+      this.saveCategories();
+    }
+    this.newCategory = '';
+  }
+
+  removeCategory(cat: string) {
+    this.categories = this.categories.filter(c => c !== cat);
+    this.saveCategories();
+  }
+
+
+  toggleTheme() {
+    this.isDark = !this.isDark;
+    this.applyTheme();
+  }
+
+  applyTheme() {
+    if (this.isDark) {
+      document.body.classList.add('dark-theme');
+    } else {
+      document.body.classList.remove('dark-theme');
+    }
+  }
+
+
+  exportPDF() {
+    const element = document.getElementById('pdf-content');
+    if (!element) return;
+
+    // 1. Forcer un thème clair pour la capture
+    element.classList.add('pdf-light');
+
+    // 2. Laisser le temps au DOM de se mettre à jour
+    setTimeout(() => {
+      html2canvas(element, { scale: 2 }).then(canvas => {
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF('p', 'mm', 'a4');
+
+        const imgWidth = 190;
+        const imgHeight = canvas.height * imgWidth / canvas.width;
+
+        pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
+        pdf.save('budget.pdf');
+
+        // 3. Retirer le thème clair après export
+        element.classList.remove('pdf-light');
+      });
+    }, 50);
+  }
+
+  renderChart() {
+    if (this.chart) {
+      this.chart.destroy();
+    }
+
+    const labels = Object.keys(this.groupedExpenses);
+    const values = Object.values(this.groupedExpenses);
+
+    this.chart = new Chart('expensesChart', {
+      type: 'pie',
+      data: {
+        labels,
+        datasets: [
+          {
+            data: values,
+            backgroundColor: [
+              '#FF6384',
+              '#36A2EB',
+              '#FFCE56',
+              '#4BC0C0',
+              '#9966FF',
+              '#FF9F40'
+            ]
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            position: 'bottom'
+          }
+        }
+      }
+    });
+  }
+
+  loadFromStorage() {
+    const raw = localStorage.getItem(this.STORAGE_KEY);
+    if (!raw) return;
+
+    try {
+      const data = JSON.parse(raw);
+      this.income = data.income ?? 0;
+      this.expenses = Array.isArray(data.expenses) ? data.expenses : [];
+    } catch {
+      // si JSON cassé, on ignore
+    }
+  }
+
+  saveToStorage() {
+    const data = {
+      income: this.income,
+      expenses: this.expenses
+    };
+    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
+  }
+
+  addExpense() {
+    if (this.expenseAmount > 0 && this.expenseCategory.trim()) {
+      const dateToUse = this.expenseDate
+        ? new Date(this.expenseDate).toISOString()
+        : new Date().toISOString();
+
+      this.expenses.push({
+        id: Date.now(),
+        amount: this.expenseAmount,
+        category: this.expenseCategory.trim(),
+        date: dateToUse
+      });
+
+      this.expenseAmount = 0;
+      this.expenseCategory = '';
+      this.expenseDate = '';
+
+      this.saveToStorage();
+      this.renderChart();
+      this.renderMonthlyChart();
+      this.renderCategoryTrendChart();
+
+    }
+  }
+
+  removeExpense(index: number) {
+    this.expenses.splice(index, 1);
+    this.saveToStorage();
+    this.renderChart();
+    this.renderMonthlyChart();
+    this.renderCategoryTrendChart();
+
+  }
+
+  updateFilter() {
+    this.renderChart();
+  }
+
+  get totalExpenses() {
+    return this.filteredExpenses.reduce((sum, e) => sum + e.amount, 0);
+  }
+
+  get balance() {
+    return this.income - this.totalExpenses;
+  }
+
+  get groupedExpenses() {
+    const groups: Record<string, number> = {};
+
+    this.filteredExpenses.forEach(e => {
+      groups[e.category] = (groups[e.category] || 0) + e.amount;
+    });
+
+    return groups;
+  }
+
+  get groupedExpensesArray() {
+    return Object.entries(this.groupedExpenses);
+  }
+
+
+  get filteredExpenses() {
+    if (!this.selectedMonth) return this.expenses;
+
+    return this.expenses.filter(e =>
+      e.date.startsWith(this.selectedMonth)
+    );
+  }
+
+  get months() {
+    const uniqueMonths = new Set<string>();
+
+    this.expenses.forEach(e => {
+      const month = e.date.slice(0, 7); // ex: "2025-03"
+      uniqueMonths.add(month);
+    });
+
+    // Convertit en tableau trié
+    return Array.from(uniqueMonths)
+      .sort()
+      .map(m => ({
+        value: m,
+        label: this.formatMonthLabel(m)
+      }));
+  }
+
+  formatMonthLabel(month: string) {
+    const [year, monthNum] = month.split('-').map(Number);
+
+    const months = [
+      'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+      'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
+    ];
+
+    return `${months[monthNum - 1]} ${year}`;
+  }
+
+  get monthlyTotals() {
+    const map = new Map<string, number>();
+
+    this.expenses.forEach(e => {
+      if (!e.date) {
+        return;
+      }
+
+      const monthKey = e.date.slice(0, 7); // "YYYY-MM"
+      const current = map.get(monthKey) ?? 0;
+      map.set(monthKey, current + e.amount);
+    });
+
+    // Tri par mois croissant
+    const sortedKeys = Array.from(map.keys()).sort();
+
+    return sortedKeys.map(key => ({
+      key,                 // "2025-03"
+      label: this.formatMonthLabel(key), // "Mars 2025"
+      total: map.get(key) ?? 0
+    }));
+  }
+  renderMonthlyChart() {
+    if (this.monthlyChart) {
+      this.monthlyChart.destroy();
+    }
+
+    const data = this.monthlyTotals;
+
+    if (!data.length) {
+      return;
+    }
+
+    const labels = data.map(d => d.label);
+    const values = data.map(d => d.total);
+
+    this.monthlyChart = new Chart('monthlyChart', {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Dépenses mensuelles',
+            data: values,
+            borderColor: '#4fc3f7',
+            backgroundColor: 'rgba(79, 195, 247, 0.2)',
+            tension: 0.3,
+            fill: true,
+            pointRadius: 4,
+            pointBackgroundColor: '#81d4fa'
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: false
+          }
+        },
+        scales: {
+          x: {
+            ticks: {
+              color: getComputedStyle(document.body)
+                .getPropertyValue('--text-color')
+                .trim()
+            },
+            grid: {
+              color: 'rgba(255,255,255,0.05)'
+            }
+          },
+          y: {
+            ticks: {
+              color: getComputedStyle(document.body)
+                .getPropertyValue('--text-color')
+                .trim()
+            },
+            grid: {
+              color: 'rgba(255,255,255,0.08)'
+            }
+          }
+        }
+      }
+    });
+  }
+
+  saveCategories() {
+    localStorage.setItem('categories', JSON.stringify(this.categories));
+  }
+
+  get categoryMonthlyTotals() {
+  if (!this.selectedCategoryForTrend) {
+    return [];
+  }
+
+  const map = new Map<string, number>();
+
+  this.expenses.forEach(e => {
+    if (!e.date || e.category !== this.selectedCategoryForTrend) {
+      return;
+    }
+
+    const monthKey = e.date.slice(0, 7); // "YYYY-MM"
+    const current = map.get(monthKey) ?? 0;
+    map.set(monthKey, current + e.amount);
+  });
+
+  const sortedKeys = Array.from(map.keys()).sort();
+
+  return sortedKeys.map(key => ({
+    key,
+    label: this.formatMonthLabel(key),
+    total: map.get(key) ?? 0
+  }));
+}
+renderCategoryTrendChart() {
+  // si aucune catégorie sélectionnée : on détruit le chart et on sort
+  if (this.categoryTrendChart) {
+    this.categoryTrendChart.destroy();
+    this.categoryTrendChart = null;
+  }
+
+  if (!this.selectedCategoryForTrend) {
+    return;
+  }
+
+  const data = this.categoryMonthlyTotals;
+  if (!data.length) {
+    return;
+  }
+
+  const labels = data.map(d => d.label);
+  const values = data.map(d => d.total);
+
+  const textColor = getComputedStyle(document.body)
+    .getPropertyValue('--text-color')
+    .trim();
+
+  this.categoryTrendChart = new Chart('categoryTrendChart', {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: `Dépenses - ${this.selectedCategoryForTrend}`,
+          data: values,
+          borderColor: '#ffb74d',
+          backgroundColor: 'rgba(255, 183, 77, 0.2)',
+          tension: 0.3,
+          fill: true,
+          pointRadius: 4,
+          pointBackgroundColor: '#ffcc80'
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: false
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: textColor },
+          grid: { color: 'rgba(255,255,255,0.05)' }
+        },
+        y: {
+          ticks: { color: textColor },
+          grid: { color: 'rgba(255,255,255,0.08)' }
+        }
+      }
+    }
+  });
+}
+}
