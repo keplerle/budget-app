@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { AfterViewInit, Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Chart, registerables } from 'chart.js';
 import jsPDF from 'jspdf';
@@ -14,7 +14,7 @@ Chart.register(...registerables);
   imports: [FormsModule]
 
 })
-export class BudgetComponent {
+export class BudgetComponent implements OnInit, AfterViewInit {
   isLocked = true;
   pinInput = '';
   storedPin = '';
@@ -63,6 +63,19 @@ export class BudgetComponent {
 
   }
 
+  ngOnInit() {
+    const saved: 'light' | 'dark' = localStorage.getItem('theme') as 'light' | 'dark';
+
+    if (saved) {
+      this.applyTheme(saved);
+      return;
+    }
+
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    this.applyTheme(prefersDark ? 'dark' : 'light');
+  }
+
+
   ngAfterViewInit() {
     this.renderChart();
     this.renderMonthlyChart();
@@ -88,16 +101,21 @@ export class BudgetComponent {
 
 
   toggleTheme() {
-    this.isDark = !this.isDark;
-    this.applyTheme();
+    this.applyTheme(this.isDark ? 'light' : 'dark');
+
   }
 
-  applyTheme() {
-    if (this.isDark) {
-      document.body.classList.add('dark-theme');
+  applyTheme(theme: 'light' | 'dark') {
+    const body = document.body;
+
+    if (theme === 'dark') {
+      body.classList.add('dark-theme');
     } else {
-      document.body.classList.remove('dark-theme');
+      body.classList.remove('dark-theme');
     }
+
+    localStorage.setItem('theme', theme);
+    this.isDark = theme === 'dark';
   }
 
 

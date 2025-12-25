@@ -46,3 +46,10 @@
     padding: 6px;
   }
 }
+
+@media (max-width: 768px) {
+  input, select {
+    font-size: 16px;
+    padding: 14px;
+  }
+}

@@ -23,3 +23,63 @@ input::placeholder {
 select {
   transition: border-color 0.25s ease, box-shadow 0.25s ease;
 }
+
+input, select {
+  border: 1px solid var(--border-color);
+  background: var(--input-bg);
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+}
+
+input:focus, select:focus {
+  border-color: #42a5f5;
+  box-shadow: 0 0 10px rgba(66,165,245,0.45);
+  background: rgba(255,255,255,0.25);
+  outline: none;
+}
+
+input:hover, select:hover {
+  background: rgba(255,255,255,0.18);
+}
+
+.input-group {
+  position: relative;
+  margin: 16px 0;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 14px 16px 14px 16px;
+  border-radius: 12px;
+}
+
+.input-group label {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-color);
+  opacity: 0.6;
+  pointer-events: none;
+  transition: 0.25s ease;
+}
+
+.input-group input:focus + label,
+.input-group input:not(:placeholder-shown) + label {
+  top: 6px;
+  font-size: 12px;
+  opacity: 0.9;
+}
+input.ng-valid.ng-touched {
+  border-color: #4caf50;
+}
+
+input.ng-invalid.ng-touched {
+  border-color: #e53935;
+}
+select {
+  appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg fill='white' ...>");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+}

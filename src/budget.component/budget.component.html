@@ -15,8 +15,10 @@
   <div class="lock-screen">
     <div class="lock-card">
       <h2>Déverrouiller</h2>
-
-      <input type="password" maxlength="4" [(ngModel)]="pinInput" placeholder="PIN à 4 chiffres" />
+      <div class="input-group">
+        <input type="password" maxlength="4" [(ngModel)]="pinInput" />
+        <label>Code PIN</label>
+      </div>
 
       <button (click)="unlock()">Entrer</button>
       @if(!storedPin) {
@@ -58,7 +60,11 @@
             <h2>Objectif du mois</h2>
 
             <div class="goal-input">
-              <input type="number" [(ngModel)]="monthlyGoal" placeholder="Objectif (€)">
+              <div class="input-group">
+                <input type="number" [(ngModel)]="monthlyGoal">
+                <label>Objectif (€)</label>
+              </div>
+
               @if(monthlyGoal > 0) {
               <div class="goal-progress">
                 <div class="bar">
@@ -80,7 +86,11 @@
             <h2>Budget mensuel</h2>
 
             <div class="budget-input">
-              <input type="number" [(ngModel)]="monthlyBudget" placeholder="Budget du mois (€)">
+              <div class="input-group">
+                <input type="number" [(ngModel)]="monthlyBudget">
+                <label>Budget du mois (€)</label>
+              </div>
+
               @if(monthlyBudget > 0) {
               <div class="budget-progress">
                 <div class="bar">
@@ -101,17 +111,29 @@
           <div class="section-card">
             <h2>Revenu & ajout de dépense</h2>
             <h3>Revenus</h3>
-            <input type="number" [(ngModel)]="income" (ngModelChange)="saveToStorage()" placeholder="Revenu mensuel" />
+            <div class="input-group">
+              <input type="number" [(ngModel)]="income" (ngModelChange)="saveToStorage()" />
+              <label>Revenu mensuel (€)</label>
+            </div>
+
             <!-- revenu + formulaire ajout dépense -->
             <h3>Ajouter une dépense</h3>
-            <input type="number" [(ngModel)]="expenseAmount" placeholder="Montant" />
+            <div class="input-group">
+              <input type="number" [(ngModel)]="expenseAmount" #ctrl="ngModel" required/>
+              <label>Montant</label>
+            </div>
+
             <select [(ngModel)]="expenseCategory">
               <option value="">Choisir une catégorie</option>
               @for (c of categories; track c) {
               <option [value]="c">{{ c }}</option>
               }
             </select>
-            <input type="date" [(ngModel)]="expenseDate" placeholder="Date" />
+            <div class="input-group">
+              <input type="date" [(ngModel)]="expenseDate" />
+              <label>Date</label>
+            </div>
+
             <button class="button-action add-expense" (click)="addExpense()">Ajouter</button>
           </div>
 
@@ -119,7 +141,11 @@
             <h2>Catégories</h2>
 
             <div class="category-add">
-              <input type="text" [(ngModel)]="newCategory" placeholder="Nouvelle catégorie">
+              <div class="input-group">
+                <input type="text" [(ngModel)]="newCategory" #ctrl="ngModel" required>
+                <label>Nom de la catégorie</label>
+              </div>
+
               <button class="button-action add-category" (click)="addCategory()">Ajouter</button>
             </div>
 

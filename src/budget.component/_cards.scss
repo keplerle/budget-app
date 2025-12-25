@@ -5,6 +5,7 @@
   border: 1px solid rgba(255, 255, 255, 0.06);
   margin-bottom: 20px;
   backdrop-filter: blur(12px);
+  transition: background 0.4s ease, border-color 0.4s ease;
 }
 
 .section-card input,
