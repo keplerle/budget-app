@@ -1,0 +1,54 @@
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  margin-bottom: 16px;
+  backdrop-filter: blur(12px);
+  background: rgba(255,255,255,0.05);
+  border-radius: 12px;
+}
+
+.budget-page {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 30px 15px;
+}
+
+.budget-card {
+  width: 100%;
+  max-width: 900px;
+  padding: 24px;
+  border-radius: 16px;
+  background: var(--card-bg);
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(16px);
+}
+
+.budget-action {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.budget-layout {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 24px;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.app-container {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  padding: 16px;
+}

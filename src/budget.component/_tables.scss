@@ -1,0 +1,57 @@
+table {
+  width: 100%;
+  font-size: 14px;
+}
+
+.expense-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  backdrop-filter: blur(12px);
+}
+
+.expense-table thead {
+  background: rgba(255,255,255,0.08);
+}
+
+.expense-table th {
+  text-align: left;
+  padding: 12px;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.expense-table td {
+  padding: 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  color: var(--text-color);
+}
+
+.expense-table tbody tr:nth-child(even) {
+  background: rgba(255,255,255,0.03);
+}
+
+.expense-table tbody tr:hover {
+  background: rgba(255,255,255,0.08);
+  transition: background 0.2s ease;
+  transform: translateX(4px);
+}
+
+.amount-cell {
+  text-align: right;
+  font-weight: 600;
+}
+
+.action-cell {
+  text-align: center;
+  width: 40px;
+}
+
+.category-badge {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.15);
+  backdrop-filter: blur(6px);
+}

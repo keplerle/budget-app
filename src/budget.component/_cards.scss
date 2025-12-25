@@ -1,0 +1,18 @@
+.section-card {
+  padding: 16px 18px;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  margin-bottom: 20px;
+  backdrop-filter: blur(12px);
+}
+
+.section-card input,
+.section-card select {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.section-card .chart-container {
+  padding: 8px 4px;
+}

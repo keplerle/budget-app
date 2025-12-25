@@ -4,6 +4,8 @@
   --card-bg: rgba(255, 255, 255, 0.6);
   --input-bg: rgba(255, 255, 255, 0.8);
   --border-color: #ccc;
+  transition: background-color 0.4s ease, color 0.4s ease;
+
 }
 
 .dark-theme {
@@ -15,6 +17,7 @@
 }
 
 body {
+  transition: background-color 0.4s ease, color 0.4s ease;
   background: var(--bg-color);
   color: var(--text-color);
   transition: background 0.3s, color 0.3s;

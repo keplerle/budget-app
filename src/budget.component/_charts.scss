@@ -1,0 +1,20 @@
+.chart-container {
+  background: var(--card-bg);
+  border-radius: 12px;
+  padding: 10px;
+  max-width: 300px;
+  margin: 0 auto;
+}
+
+#monthlyChart,
+#categoryTrendChart,
+#monthCompareChart,
+#yearChart,
+#projectionChart {
+  width: 100% !important;
+  height: 220px !important;
+}
+
+#yearChart {
+  height: 260px !important;
+}

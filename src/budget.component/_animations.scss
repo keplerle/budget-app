@@ -1,0 +1,25 @@
+.section-card {
+  opacity: 0;
+  transform: translateY(10px);
+  animation: fadeInUp 0.4s ease forwards;
+}
+
+.kpi-card {
+  opacity: 0;
+  transform: scale(0.95);
+  animation: fadeScale 0.4s ease forwards;
+}
+
+@keyframes fadeInUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeScale {
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

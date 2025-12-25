@@ -163,6 +163,10 @@ export class BudgetComponent {
         ]
       },
       options: {
+        animation: {
+          duration: 600,
+          easing: 'easeOutQuart'
+        },
         responsive: true,
         plugins: {
           legend: {
@@ -355,6 +359,10 @@ export class BudgetComponent {
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        animation: {
+          duration: 600,
+          easing: 'easeOutQuart'
+        },
         plugins: {
           legend: {
             display: false
@@ -456,6 +464,10 @@ export class BudgetComponent {
         ]
       },
       options: {
+        animation: {
+          duration: 600,
+          easing: 'easeOutQuart'
+        },
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
@@ -642,6 +654,10 @@ export class BudgetComponent {
         ]
       },
       options: {
+        animation: {
+          duration: 600,
+          easing: 'easeOutQuart'
+        },
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
@@ -737,6 +753,10 @@ export class BudgetComponent {
         ]
       },
       options: {
+        animation: {
+          duration: 600,
+          easing: 'easeOutQuart'
+        },
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
@@ -876,6 +896,10 @@ export class BudgetComponent {
         ]
       },
       options: {
+        animation: {
+          duration: 600,
+          easing: 'easeOutQuart'
+        },
         indexAxis: 'y', // barres horizontales
         responsive: true,
         maintainAspectRatio: false,
