@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { Chart, registerables } from 'chart.js';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import * as CryptoJS from 'crypto-js';
 Chart.register(...registerables);
 
 @Component({
@@ -14,6 +15,10 @@ Chart.register(...registerables);
 
 })
 export class BudgetComponent {
+  isLocked = true;
+  pinInput = '';
+  storedPin = '';
+
   categories: string[] = [];
   income = 0;
   expenseAmount = 0;
@@ -30,10 +35,21 @@ export class BudgetComponent {
   private readonly STORAGE_KEY = 'budget-app-data';
 
   constructor() {
-    this.loadFromStorage();
-    this.applyTheme();
-    const saved = localStorage.getItem('categories');
-    this.categories = saved ? JSON.parse(saved) : ['Logement', 'Nourriture', 'Transport', 'Loisirs'];
+
+    const savedPin = localStorage.getItem('app_pin');
+    if (savedPin) {
+      const bytes = CryptoJS.AES.decrypt(savedPin, 'master_key');
+      this.storedPin = bytes.toString(CryptoJS.enc.Utf8);
+    }
+    this.isLocked = !!savedPin;
+
+    const encExpenses = localStorage.getItem('expenses');
+    const encCategories = localStorage.getItem('categories');
+    const encIncome = localStorage.getItem('income');
+
+    this.expenses = encExpenses ? this.decrypt(encExpenses) || [] : [];
+    this.categories = encCategories ? this.decrypt(encCategories) || [] : [];
+    this.income = encIncome ? this.decrypt(encIncome) || 0 : 0;
 
   }
 
@@ -148,11 +164,13 @@ export class BudgetComponent {
   }
 
   saveToStorage() {
-    const data = {
-      income: this.income,
-      expenses: this.expenses
-    };
-    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
+    const encryptedExpenses = this.encrypt(this.expenses);
+    const encryptedCategories = this.encrypt(this.categories);
+    const encryptedIncome = this.encrypt(this.income);
+
+    localStorage.setItem('expenses', encryptedExpenses);
+    localStorage.setItem('categories', encryptedCategories);
+    localStorage.setItem('income', encryptedIncome);
   }
 
   addExpense() {
@@ -344,89 +362,182 @@ export class BudgetComponent {
   }
 
   get categoryMonthlyTotals() {
-  if (!this.selectedCategoryForTrend) {
-    return [];
+    if (!this.selectedCategoryForTrend) {
+      return [];
+    }
+
+    const map = new Map<string, number>();
+
+    this.expenses.forEach(e => {
+      if (!e.date || e.category !== this.selectedCategoryForTrend) {
+        return;
+      }
+
+      const monthKey = e.date.slice(0, 7); // "YYYY-MM"
+      const current = map.get(monthKey) ?? 0;
+      map.set(monthKey, current + e.amount);
+    });
+
+    const sortedKeys = Array.from(map.keys()).sort();
+
+    return sortedKeys.map(key => ({
+      key,
+      label: this.formatMonthLabel(key),
+      total: map.get(key) ?? 0
+    }));
   }
+  renderCategoryTrendChart() {
+    // si aucune catégorie sélectionnée : on détruit le chart et on sort
+    if (this.categoryTrendChart) {
+      this.categoryTrendChart.destroy();
+      this.categoryTrendChart = null;
+    }
 
-  const map = new Map<string, number>();
-
-  this.expenses.forEach(e => {
-    if (!e.date || e.category !== this.selectedCategoryForTrend) {
+    if (!this.selectedCategoryForTrend) {
       return;
     }
 
-    const monthKey = e.date.slice(0, 7); // "YYYY-MM"
-    const current = map.get(monthKey) ?? 0;
-    map.set(monthKey, current + e.amount);
-  });
+    const data = this.categoryMonthlyTotals;
+    if (!data.length) {
+      return;
+    }
 
-  const sortedKeys = Array.from(map.keys()).sort();
+    const labels = data.map(d => d.label);
+    const values = data.map(d => d.total);
 
-  return sortedKeys.map(key => ({
-    key,
-    label: this.formatMonthLabel(key),
-    total: map.get(key) ?? 0
-  }));
-}
-renderCategoryTrendChart() {
-  // si aucune catégorie sélectionnée : on détruit le chart et on sort
-  if (this.categoryTrendChart) {
-    this.categoryTrendChart.destroy();
-    this.categoryTrendChart = null;
-  }
+    const textColor = getComputedStyle(document.body)
+      .getPropertyValue('--text-color')
+      .trim();
 
-  if (!this.selectedCategoryForTrend) {
-    return;
-  }
-
-  const data = this.categoryMonthlyTotals;
-  if (!data.length) {
-    return;
-  }
-
-  const labels = data.map(d => d.label);
-  const values = data.map(d => d.total);
-
-  const textColor = getComputedStyle(document.body)
-    .getPropertyValue('--text-color')
-    .trim();
-
-  this.categoryTrendChart = new Chart('categoryTrendChart', {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [
-        {
-          label: `Dépenses - ${this.selectedCategoryForTrend}`,
-          data: values,
-          borderColor: '#ffb74d',
-          backgroundColor: 'rgba(255, 183, 77, 0.2)',
-          tension: 0.3,
-          fill: true,
-          pointRadius: 4,
-          pointBackgroundColor: '#ffcc80'
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          display: false
-        }
+    this.categoryTrendChart = new Chart('categoryTrendChart', {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: `Dépenses - ${this.selectedCategoryForTrend}`,
+            data: values,
+            borderColor: '#ffb74d',
+            backgroundColor: 'rgba(255, 183, 77, 0.2)',
+            tension: 0.3,
+            fill: true,
+            pointRadius: 4,
+            pointBackgroundColor: '#ffcc80'
+          }
+        ]
       },
-      scales: {
-        x: {
-          ticks: { color: textColor },
-          grid: { color: 'rgba(255,255,255,0.05)' }
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: false
+          }
         },
-        y: {
-          ticks: { color: textColor },
-          grid: { color: 'rgba(255,255,255,0.08)' }
+        scales: {
+          x: {
+            ticks: { color: textColor },
+            grid: { color: 'rgba(255,255,255,0.05)' }
+          },
+          y: {
+            ticks: { color: textColor },
+            grid: { color: 'rgba(255,255,255,0.08)' }
+          }
         }
       }
+    });
+  }
+
+  setPin() {
+    if (this.pinInput.length === 4) {
+      localStorage.setItem('app_pin', CryptoJS.AES.encrypt(this.pinInput, 'master_key').toString());
+      this.storedPin = this.pinInput;
+      this.pinInput = '';
+      alert('PIN défini !');
     }
-  });
+  }
+
+  unlock() {
+    if (this.pinInput === this.storedPin) {
+      this.isLocked = false;
+      this.pinInput = '';
+    } else {
+      alert('PIN incorrect');
+    }
+  }
+
+  lock() {
+    this.isLocked = true;
+  }
+
+  get encryptionKey() {
+    return this.storedPin || 'default_key';
+  }
+
+  encrypt(data: any): string {
+    return CryptoJS.AES.encrypt(JSON.stringify(data), this.encryptionKey).toString();
+  }
+
+  decrypt(cipher: string): any {
+    try {
+      const bytes = CryptoJS.AES.decrypt(cipher, this.encryptionKey);
+      const decrypted = bytes.toString(CryptoJS.enc.Utf8);
+      return JSON.parse(decrypted);
+    } catch {
+      return null;
+    }
+  }
+
+  get fullBackup() {
+    return {
+      expenses: this.expenses,
+      categories: this.categories,
+      income: this.income,
+      timestamp: new Date().toISOString()
+    };
+  }
+
+  exportEncrypted() {
+    const data = this.fullBackup;
+    const encrypted = this.encrypt(data); // AES avec ton PIN
+
+    const blob = new Blob([encrypted], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'budget_secure_backup.json';
+    a.click();
+
+    URL.revokeObjectURL(url);
+  }
+
+  importEncrypted(event: any) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    const encryptedText = reader.result as string;
+    const decrypted = this.decrypt(encryptedText);
+
+    if (!decrypted) {
+      alert('Impossible de déchiffrer le fichier. PIN incorrect ?');
+      return;
+    }
+
+    this.expenses = decrypted.expenses || [];
+    this.categories = decrypted.categories || [];
+    this.income = decrypted.income || 0;
+
+    this.saveToStorage();
+    this.renderChart();
+    this.renderMonthlyChart();
+    this.renderCategoryTrendChart();
+
+    alert('Données restaurées avec succès !');
+  };
+
+  reader.readAsText(file);
 }
 }

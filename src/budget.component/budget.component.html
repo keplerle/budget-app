@@ -1,9 +1,33 @@
+<button (click)="lock()">Verrouiller</button>
+
+@if(isLocked) {
+<div class="lock-screen">
+  <div class="lock-card">
+    <h2>Déverrouiller</h2>
+
+    <input type="password" maxlength="4" [(ngModel)]="pinInput" placeholder="PIN à 4 chiffres" />
+
+    <button (click)="unlock()">Entrer</button>
+    @if(!storedPin) {
+    <div class="set-pin">
+      <p>Aucun code PIN défini</p>
+      <button (click)="setPin()">Définir ce PIN</button>
+    </div>
+    }
+
+  </div>
+</div>
+} @else {
 <div class="budget-page">
   <div class="budget-card">
     <h2>Calculateur de budget</h2>
-    <div class="budget-action">
-      <button class="button-action export-pdf" (click)="exportPDF()">Exporter en PDF</button>
-      <button class="button-action switch-theme" (click)="toggleTheme()">Mode clair / sombre</button>
+    <div class="section-card">
+      <div class="budget-action">
+        <button class="button-action export-pdf" (click)="exportPDF()">Exporter en PDF</button>
+        <button class="button-action switch-theme" (click)="toggleTheme()">Mode clair / sombre</button>
+        <button class="button-action export-encrypted" (click)="exportEncrypted()">Exporter (sécurisé)</button>
+        <input type="file" (change)="importEncrypted($event)" />
+      </div>
     </div>
 
     <div class="budget-layout">
@@ -136,3 +160,4 @@
     </div>
   </div>
 </div>
+}
