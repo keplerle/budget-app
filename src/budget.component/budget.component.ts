@@ -18,7 +18,7 @@ export class BudgetComponent {
   isLocked = true;
   pinInput = '';
   storedPin = '';
-
+  csvExportMode = 'all';
   categories: string[] = [];
   income = 0;
   expenseAmount = 0;
@@ -29,10 +29,15 @@ export class BudgetComponent {
   chart: any;
   monthlyChart: any;
   categoryTrendChart: any;
+  monthCompareChart: any;
+  yearChart: any;
+  projectionChart: any;
   isDark = true;
   newCategory = '';
   selectedCategoryForTrend = '';
   monthlyBudget = 0;
+  selectedYear = new Date().getFullYear().toString();
+  monthlyGoal = 0;
 
   private readonly STORAGE_KEY = 'budget-app-data';
 
@@ -49,6 +54,8 @@ export class BudgetComponent {
     const encCategories = localStorage.getItem('categories');
     const encIncome = localStorage.getItem('income');
     const savedBudget = localStorage.getItem('monthlyBudget');
+    const savedGoal = localStorage.getItem('monthlyGoal');
+    this.monthlyGoal = savedGoal ? Number(savedGoal) : 0;
     this.monthlyBudget = savedBudget ? this.decrypt(savedBudget) || 0 : 0;
     this.expenses = encExpenses ? this.decrypt(encExpenses) || [] : [];
     this.categories = encCategories ? this.decrypt(encCategories) || [] : [];
@@ -60,6 +67,9 @@ export class BudgetComponent {
     this.renderChart();
     this.renderMonthlyChart();
     this.renderCategoryTrendChart();
+    this.renderMonthCompareChart();
+    this.renderYearChart();
+    this.renderProjectionChart();
   }
 
   addCategory() {
@@ -208,7 +218,9 @@ export class BudgetComponent {
       this.renderChart();
       this.renderMonthlyChart();
       this.renderCategoryTrendChart();
-
+      this.renderMonthCompareChart();
+      this.renderYearChart();
+      this.renderProjectionChart();
     }
   }
 
@@ -218,11 +230,14 @@ export class BudgetComponent {
     this.renderChart();
     this.renderMonthlyChart();
     this.renderCategoryTrendChart();
-
+    this.renderMonthCompareChart();
+    this.renderYearChart();
+    this.renderProjectionChart();
   }
 
   updateFilter() {
     this.renderChart();
+    this.renderProjectionChart();
   }
 
   get totalExpenses() {
@@ -557,10 +572,327 @@ export class BudgetComponent {
 
   saveBudget() {
     localStorage.setItem('monthlyBudget', String(this.monthlyBudget));
+    this.renderProjectionChart();
   }
 
   get budgetUsedPercent() {
     if (!this.monthlyBudget) return 0;
     return Math.min(100, Math.round((this.totalExpenses / this.monthlyBudget) * 100));
+  }
+
+  getPreviousMonth(month: string) {
+    const [year, m] = month.split('-').map(Number);
+    if (m === 1) {
+      return `${year - 1}-12`;
+    }
+    const prev = (m - 1).toString().padStart(2, '0');
+    return `${year}-${prev}`;
+  }
+
+  get previousMonthTotal() {
+    if (!this.selectedMonth) return 0;
+
+    const prev = this.getPreviousMonth(this.selectedMonth);
+
+    return this.expenses
+      .filter(e => e.date?.startsWith(prev))
+      .reduce((sum, e) => sum + e.amount, 0);
+  }
+
+  get monthComparisonPercent() {
+    const prev = this.previousMonthTotal;
+    if (prev === 0) return 0;
+
+    return Math.round(((this.totalExpenses - prev) / prev) * 100);
+  }
+
+  renderMonthCompareChart() {
+    if (this.monthCompareChart) {
+      this.monthCompareChart.destroy();
+    }
+
+    if (!this.selectedMonth) return;
+
+    const prev = this.getPreviousMonth(this.selectedMonth);
+
+    const labels = [
+      this.formatMonthLabel(prev),
+      this.formatMonthLabel(this.selectedMonth)
+    ];
+
+    const values = [
+      this.previousMonthTotal,
+      this.totalExpenses
+    ];
+
+    const textColor = getComputedStyle(document.body)
+      .getPropertyValue('--text-color')
+      .trim();
+
+    this.monthCompareChart = new Chart('monthCompareChart', {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Dépenses',
+            data: values,
+            backgroundColor: ['#90caf9', '#42a5f5']
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          x: {
+            ticks: { color: textColor },
+            grid: { display: false }
+          },
+          y: {
+            ticks: { color: textColor },
+            grid: { color: 'rgba(255,255,255,0.1)' }
+          }
+        }
+      }
+    });
+  }
+
+  get availableYears() {
+    const years = new Set<string>();
+
+    this.expenses.forEach(e => {
+      if (e.date) {
+        years.add(e.date.slice(0, 4));
+      }
+    });
+
+    return Array.from(years).sort();
+  }
+  get yearlyTotals() {
+    const totals = Array(12).fill(0);
+
+    this.expenses.forEach(e => {
+      if (!e.date) return;
+
+      const year = e.date.slice(0, 4);
+      if (year !== this.selectedYear) return;
+
+      const month = Number(e.date.slice(5, 7)) - 1;
+      totals[month] += e.amount;
+    });
+
+    return totals;
+  }
+
+  get yearlyTotal() {
+    return this.yearlyTotals.reduce((a, b) => a + b, 0);
+  }
+
+  get yearlyAverage() {
+    return Math.round(this.yearlyTotal / 12);
+  }
+
+  get highestMonth() {
+    const max = Math.max(...this.yearlyTotals);
+    const index = this.yearlyTotals.indexOf(max);
+    return { month: index + 1, value: max };
+  }
+
+  get lowestMonth() {
+    const min = Math.min(...this.yearlyTotals);
+    const index = this.yearlyTotals.indexOf(min);
+    return { month: index + 1, value: min };
+  }
+
+  renderYearChart() {
+    if (this.yearChart) {
+      this.yearChart.destroy();
+    }
+
+    const labels = [
+      'Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin',
+      'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'
+    ];
+
+    const values = this.yearlyTotals;
+
+    const textColor = getComputedStyle(document.body)
+      .getPropertyValue('--text-color')
+      .trim();
+
+    this.yearChart = new Chart('yearChart', {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Dépenses mensuelles',
+            data: values,
+            backgroundColor: '#4fc3f7'
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          x: {
+            ticks: { color: textColor },
+            grid: { display: false }
+          },
+          y: {
+            ticks: { color: textColor },
+            grid: { color: 'rgba(255,255,255,0.1)' }
+          }
+        }
+      }
+    });
+  }
+
+  get expensesForCSV() {
+    if (this.csvExportMode === 'month' && this.selectedMonth) {
+      return this.filteredExpenses; // tu l’as déjà
+    }
+    return this.expenses;
+  }
+
+  generateCSV() {
+    const rows = [
+      ['date', 'category', 'amount'] // en-tête
+    ];
+
+    this.expensesForCSV.forEach(e => {
+      rows.push([
+        e.date,
+        e.category,
+        e.amount.toString()
+      ]);
+    });
+
+    return rows.map(r => r.join(';')).join('\n');
+  }
+
+  exportCSV() {
+    const csv = this.generateCSV();
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    const date = new Date().toISOString().slice(0, 10);
+    a.download = `budget_${date}.csv`;
+    a.click();
+
+    URL.revokeObjectURL(url);
+  }
+
+  saveGoal() {
+    localStorage.setItem('monthlyGoal', String(this.monthlyGoal));
+    this.renderProjectionChart();
+  }
+
+  get goalProgress() {
+    if (!this.monthlyGoal) return 0;
+
+    const saved = this.monthlyGoal - this.totalExpenses;
+    const percent = (saved / this.monthlyGoal) * 100;
+
+    return Math.max(0, Math.min(100, Math.round(percent)));
+  }
+
+  get currentMonthExpenses() {
+    return this.filteredExpenses;
+  }
+
+  get dailyAverage() {
+    if (!this.selectedMonth) return 0;
+
+    const today = new Date();
+    const [year, month] = this.selectedMonth.split('-').map(Number);
+
+    // Si on regarde un mois passé → on prend le nombre total de jours du mois
+    const isCurrentMonth =
+      today.getFullYear() === year && today.getMonth() + 1 === month;
+
+    const daysPassed = isCurrentMonth
+      ? today.getDate()
+      : new Date(year, month, 0).getDate();
+
+    const total = this.currentMonthExpenses.reduce((a, b) => a + b.amount, 0);
+
+    return Math.round(total / daysPassed);
+  }
+
+  get endOfMonthProjection() {
+    if (!this.selectedMonth) return 0;
+
+    const [year, month] = this.selectedMonth.split('-').map(Number);
+    const daysInMonth = new Date(year, month, 0).getDate();
+
+    return Math.round(this.dailyAverage * daysInMonth);
+  }
+  renderProjectionChart() {
+    if (this.projectionChart) {
+      this.projectionChart.destroy();
+    }
+
+    if (!this.selectedMonth) return;
+
+    const textColor = getComputedStyle(document.body)
+      .getPropertyValue('--text-color')
+      .trim();
+
+    const labels = ['Budget', 'Dépenses actuelles', 'Projection fin de mois'];
+
+    const values = [
+      this.monthlyBudget,
+      this.totalExpenses,
+      this.endOfMonthProjection
+    ];
+
+    const colors = [
+      '#4caf50', // budget
+      '#42a5f5', // dépenses actuelles
+      this.endOfMonthProjection > this.monthlyBudget ? '#e53935' : '#ffb74d' // projection
+    ];
+
+    this.projectionChart = new Chart('projectionChart', {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Montants',
+            data: values,
+            backgroundColor: colors
+          }
+        ]
+      },
+      options: {
+        indexAxis: 'y', // barres horizontales
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          x: {
+            ticks: { color: textColor },
+            grid: { color: 'rgba(255,255,255,0.1)' }
+          },
+          y: {
+            ticks: { color: textColor },
+            grid: { display: false }
+          }
+        }
+      }
+    });
   }
 }
