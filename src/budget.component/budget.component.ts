@@ -89,28 +89,38 @@ export class BudgetComponent {
 
 
   exportPDF() {
-    const element = document.getElementById('pdf-content');
-    if (!element) return;
+    const element = document.getElementById('budget-content'); // ton conteneur principal
+    if (element) {
 
-    // 1. Forcer un thème clair pour la capture
-    element.classList.add('pdf-light');
-
-    // 2. Laisser le temps au DOM de se mettre à jour
-    setTimeout(() => {
       html2canvas(element, { scale: 2 }).then(canvas => {
+
         const imgData = canvas.toDataURL('image/png');
+
         const pdf = new jsPDF('p', 'mm', 'a4');
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
 
-        const imgWidth = 190;
-        const imgHeight = canvas.height * imgWidth / canvas.width;
+        const imgWidth = pageWidth;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-        pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
+        let heightLeft = imgHeight;
+        let position = 0;
+        const margin = 10;
+        pdf.addImage(imgData, 'PNG', margin, margin, imgWidth - margin * 2, imgHeight);
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+
+        while (heightLeft > 0) {
+          position = heightLeft - imgHeight;
+          pdf.addPage();
+          pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+          heightLeft -= pageHeight;
+        }
+
         pdf.save('budget.pdf');
-
-        // 3. Retirer le thème clair après export
-        element.classList.remove('pdf-light');
       });
-    }, 50);
+    }
+
   }
 
   renderChart() {
@@ -513,31 +523,31 @@ export class BudgetComponent {
   }
 
   importEncrypted(event: any) {
-  const file = event.target.files[0];
-  if (!file) return;
+    const file = event.target.files[0];
+    if (!file) return;
 
-  const reader = new FileReader();
-  reader.onload = () => {
-    const encryptedText = reader.result as string;
-    const decrypted = this.decrypt(encryptedText);
+    const reader = new FileReader();
+    reader.onload = () => {
+      const encryptedText = reader.result as string;
+      const decrypted = this.decrypt(encryptedText);
 
-    if (!decrypted) {
-      alert('Impossible de déchiffrer le fichier. PIN incorrect ?');
-      return;
-    }
+      if (!decrypted) {
+        alert('Impossible de déchiffrer le fichier. PIN incorrect ?');
+        return;
+      }
 
-    this.expenses = decrypted.expenses || [];
-    this.categories = decrypted.categories || [];
-    this.income = decrypted.income || 0;
+      this.expenses = decrypted.expenses || [];
+      this.categories = decrypted.categories || [];
+      this.income = decrypted.income || 0;
 
-    this.saveToStorage();
-    this.renderChart();
-    this.renderMonthlyChart();
-    this.renderCategoryTrendChart();
+      this.saveToStorage();
+      this.renderChart();
+      this.renderMonthlyChart();
+      this.renderCategoryTrendChart();
 
-    alert('Données restaurées avec succès !');
-  };
+      alert('Données restaurées avec succès !');
+    };
 
-  reader.readAsText(file);
-}
+    reader.readAsText(file);
+  }
 }
