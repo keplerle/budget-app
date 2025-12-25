@@ -32,6 +32,27 @@
 
     <div class="budget-layout">
       <div class="column left">
+        <div class="section-card">
+          <h2>Budget mensuel</h2>
+
+          <div class="budget-input">
+            <input type="number" [(ngModel)]="monthlyBudget" placeholder="Budget du mois (€)">
+            @if(monthlyBudget > 0) {
+            <div class="budget-progress">
+              <div class="bar">
+
+                <div class="fill" [style.width.%]="budgetUsedPercent"
+                  [style.background]="budgetUsedPercent >= 100 ? 'linear-gradient(90deg, #e53935, #ef5350)' : 'linear-gradient(90deg, #4caf50, #81c784)'">
+                </div>
+              </div>
+
+              <p>{{ totalExpenses }} € / {{ monthlyBudget }} € ({{ budgetUsedPercent }}%)</p>
+            </div>
+            }
+
+            <button (click)="saveBudget()">Enregistrer</button>
+          </div>
+        </div>
 
         <div class="section-card">
           <h2>Revenu & ajout de dépense</h2>
@@ -88,6 +109,12 @@
               <h3>Transactions</h3>
               <p>{{ filteredExpenses.length }}</p>
             </div>
+            @if(monthlyBudget > 0) {
+            <div class="kpi-card">
+              <h3>Budget restant</h3>
+              <p>{{ monthlyBudget - totalExpenses }} €</p>
+            </div>
+            }
           </div>
 
           <div class="section-card">

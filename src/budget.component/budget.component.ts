@@ -32,6 +32,8 @@ export class BudgetComponent {
   isDark = true;
   newCategory = '';
   selectedCategoryForTrend = '';
+  monthlyBudget = 0;
+
   private readonly STORAGE_KEY = 'budget-app-data';
 
   constructor() {
@@ -46,7 +48,8 @@ export class BudgetComponent {
     const encExpenses = localStorage.getItem('expenses');
     const encCategories = localStorage.getItem('categories');
     const encIncome = localStorage.getItem('income');
-
+    const savedBudget = localStorage.getItem('monthlyBudget');
+    this.monthlyBudget = savedBudget ? this.decrypt(savedBudget) || 0 : 0;
     this.expenses = encExpenses ? this.decrypt(encExpenses) || [] : [];
     this.categories = encCategories ? this.decrypt(encCategories) || [] : [];
     this.income = encIncome ? this.decrypt(encIncome) || 0 : 0;
@@ -177,7 +180,8 @@ export class BudgetComponent {
     const encryptedExpenses = this.encrypt(this.expenses);
     const encryptedCategories = this.encrypt(this.categories);
     const encryptedIncome = this.encrypt(this.income);
-
+    const encryptedBudget = this.encrypt(this.monthlyBudget);
+    localStorage.setItem('monthlyBudget', encryptedBudget);
     localStorage.setItem('expenses', encryptedExpenses);
     localStorage.setItem('categories', encryptedCategories);
     localStorage.setItem('income', encryptedIncome);
@@ -549,5 +553,14 @@ export class BudgetComponent {
     };
 
     reader.readAsText(file);
+  }
+
+  saveBudget() {
+    localStorage.setItem('monthlyBudget', String(this.monthlyBudget));
+  }
+
+  get budgetUsedPercent() {
+    if (!this.monthlyBudget) return 0;
+    return Math.min(100, Math.round((this.totalExpenses / this.monthlyBudget) * 100));
   }
 }
