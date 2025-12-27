@@ -1,3 +1,7 @@
+@use '../../styles/inputs';
+@use '../../styles/responsive';
+@use '../../styles/cards';
+
 .lock-screen {
   position: fixed;
   inset: 0;
@@ -16,4 +20,9 @@
   text-align: center;
   backdrop-filter: blur(12px);
   border: 1px solid rgba(255,255,255,0.1);
+
+  & input {
+  width: 100%;
+  box-sizing: border-box;
+}
 }

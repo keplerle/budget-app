@@ -8,12 +8,13 @@
   cursor: pointer;
   transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.2s;
 }
-
+.button-action.save,
 .button-action.add-expense,
 .button-action.add-category {
   background: #27ae60;
 }
 
+.button-action.save:hover,
 .button-action.add-expense:hover,
 .button-action.add-category:hover {
   background: #219150;

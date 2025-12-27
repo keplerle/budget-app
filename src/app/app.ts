@@ -1,6 +1,6 @@
 import { Component, signal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { BudgetComponent } from '../budget.component/budget.component';
+import { BudgetComponent } from '../components/budget.component/budget.component';
 
 @Component({
   selector: 'app-root',

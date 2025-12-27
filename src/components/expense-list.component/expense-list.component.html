@@ -1,0 +1,51 @@
+<div class="section-card">
+    <h2>Dépenses</h2>
+
+    <h3>Filtrer par mois</h3>
+    <select [(ngModel)]="selectedMonth" (ngModelChange)="updateFilter($event)">
+        <option value="">Tous les mois</option>
+        @for (m of months; track m) {
+        <option [value]="m.value">{{ m.label }}</option>
+        }
+    </select>
+    <table class="expense-table">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Catégorie</th>
+                <th>Montant</th>
+                <th></th>
+            </tr>
+        </thead>
+
+        <tbody>
+            @for (e of filteredExpenses(); track e) {
+            <tr>
+                <td>{{ e.date }}</td>
+
+                <td>
+                    <span class="category-badge">{{ e.category }}</span>
+                </td>
+
+                <td class="amount-cell">
+                    {{ e.amount }} €
+                </td>
+
+                <td class="action-cell">
+                    <button class="delete-btn" (click)="removeExpense(e.id)">
+                        <span class="material-icons">delete</span>
+                    </button>
+                </td>
+            </tr>
+            }
+        </tbody>
+    </table>
+    <h3>Répartition par catégorie</h3>
+    <ul>
+        @for(cat of groupedExpensesArray; track cat[0]){
+        <li>
+            {{ cat[0] }} : {{ cat[1] }} €
+        </li>
+        }
+    </ul>
+</div>

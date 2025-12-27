@@ -1,0 +1,64 @@
+<div class="section-card">
+  <h2>Graphique des dépenses</h2>
+  <div class="chart-container">
+    <canvas id="expensesChart"></canvas>
+  </div>
+</div>
+
+<div class="section-card">
+  <h2>Évolution mensuelle</h2>
+  <div class="chart-container">
+    <canvas id="monthlyChart"></canvas>
+  </div>
+</div>
+
+<div class="section-card">
+  <h2>Évolution par catégorie</h2>
+
+  <div class="category-trend-filter">
+    <label>Catégorie :</label>
+    <select [(ngModel)]="selectedCategoryForTrend" (change)="renderCategoryTrendChart()">
+      <option value="">Choisir une catégorie</option>
+      @for (c of categories(); track c) {
+      <option [value]="c">{{ c }}</option>
+      }
+    </select>
+  </div>
+
+  <div class="chart-container">
+    <canvas id="categoryTrendChart"></canvas>
+  </div>
+</div>
+
+<div class="section-card">
+  <h2>Comparaison mois à mois</h2>
+
+  <div class="chart-container">
+    <canvas id="monthCompareChart"></canvas>
+  </div>
+</div>
+
+<div class="section-card">
+  <h2>Vue annuelle</h2>
+
+  <div class="year-select">
+    <label>Année :</label>
+    <select [(ngModel)]="selectedYear" (change)="renderYearChart()">
+      @for (y of availableYears; track y) {
+      <option [value]="y">{{ y }}</option>
+      }
+    </select>
+  </div>
+
+  <div class="chart-container">
+    <canvas id="yearChart"></canvas>
+  </div>
+</div>
+
+<div class="section-card">
+  <h2>Projection fin de mois</h2>
+
+  <div class="chart-container">
+    <canvas id="projectionChart"></canvas>
+  </div>
+</div>

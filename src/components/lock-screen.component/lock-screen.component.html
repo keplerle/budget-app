@@ -1,0 +1,18 @@
+  <div class="lock-screen">
+    <div class="lock-card">
+      <h2>Déverrouiller</h2>
+      <div class="input-group">
+        <input type="password" maxlength="4" [(ngModel)]="pinInput" />
+        <label>Code PIN</label>
+      </div>
+
+      <button (click)="unlock()">Entrer</button>
+      @if(!storedPin()) {
+      <div class="set-pin">
+        <p>Aucun code PIN défini</p>
+        <button (click)="setPin()">Définir ce PIN</button>
+      </div>
+      }
+
+    </div>
+  </div>

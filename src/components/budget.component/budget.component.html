@@ -1,0 +1,47 @@
+<app-header [isDarkMode]="isDark" (applyThemeChange)="applyTheme($event)"
+  (lockStatusChange)="lockStatusChange($event)"></app-header>
+<div class="app-container">
+  @if(isLocked()) {
+  <app-lock-screen [storedPin]="storedPin()" (lockStatusChange)="lockStatusChange($event)"
+    (storedPinChange)="storedPinChange($event)"></app-lock-screen>
+  } @else {
+  <div class="budget-page">
+    <div class="budget-card">
+      <app-toolbar (executeExportCSV)="exportCSV($event)" (executeExportPDF)="exportPDF()"
+        (executeCryptedExport)="exportEncrypted()" (executeCryptedImport)="importEncrypted($event)">
+      </app-toolbar>
+
+      <div class="budget-layout">
+        <div class="column left">
+          <app-monthly-goal [monthlyGoal]="monthlyGoal" [totalExpenses]="totalExpenses"></app-monthly-goal>
+          <app-monthly-budget [monthlyBudget]="monthlyBudget" [totalExpenses]="totalExpenses"></app-monthly-budget>
+          <app-income [income]="income" (afterIncomeAdd)="saveToStorage()"></app-income>
+          <app-expense [categories]="categories" (addExpenseHandler)="addExpense($event)"></app-expense>
+          <app-category (onCategoriesChange)="afterCategoriesChange($event)" [categories]="categories"></app-category>
+        </div>
+
+        <div class="column right">
+          <div id="budget-content">
+            <app-kpi [yearlyTotals]="yearlyTotals" [income]="income" [totalExpenses]="totalExpenses"
+              [monthlyBudget]="monthlyBudget" [monthlyGoal]="monthlyGoal" [dailyAverage]="dailyAverage"
+              [selectedYear]="selectedYear" [selectedMonth]="selectedMonth"
+              [endOfMonthProjection]="endOfMonthProjection" [monthComparisonPercent]="monthComparisonPercent"></app-kpi>
+
+            <app-expense-list [expenses]="expenses" [filteredExpenses]="filteredExpenses"
+              [groupedExpenses]="groupedExpenses" [filteredExpenses]="filteredExpenses" [selectedMonth]="selectedMonth"
+              (removeExpenseChange)="removeExpense($event)" (updatedFilterChange)="updateFilter($event)"> </app-expense-list>
+
+            <app-chart-list #chartList [categories]="categories" [expenses]="expenses"
+              [groupedExpenses]="groupedExpenses" [selectedMonth]="selectedMonth" [selectedYear]="selectedYear"
+              [selectedCategoryForTrend]="selectedCategoryForTrend" [totalExpenses]="totalExpenses"
+              [monthlyBudget]="monthlyBudget" [previousMonthTotal]="previousMonthTotal"
+              [endOfMonthProjection]="endOfMonthProjection" [yearlyTotals]="yearlyTotals">
+            </app-chart-list>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  }
+</div>

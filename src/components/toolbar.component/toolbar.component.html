@@ -1,0 +1,20 @@
+      <div class="section-card">
+        <div class="budget-action">
+          <select [(ngModel)]="csvExportMode">
+            <option value="all">Tout l’historique</option>
+            <option value="month">Mois filtré</option>
+          </select>
+
+          <button class="button-action export-csv" (click)="exportCSV()"><span class="material-icons">table_view</span>
+          </button>
+          <button class="button-action export-pdf" (click)="exportPDF()"><span
+              class="material-icons">picture_as_pdf</span>
+          </button>
+
+          <button class="button-action export-encrypted" (click)="exportEncrypted()">
+            <span class="material-icons">save_as</span>
+
+          </button>
+          <input type="file" (change)="importEncrypted($event)" />
+        </div>
+      </div>

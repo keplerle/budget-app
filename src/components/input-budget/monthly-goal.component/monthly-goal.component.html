@@ -1,0 +1,26 @@
+          <div class="section-card">
+            <h2>Objectif du mois</h2>
+
+            <div class="goal-input">
+              <div class="input-group">
+                <input type="number" [(ngModel)]="monthlyGoal">
+                <label>Objectif (€)</label>
+              </div>
+
+              @if(monthlyGoal()! > 0) {
+              <div class="goal-progress">
+                <div class="bar">
+                  <div class="fill" [style.width.%]="goalProgress"
+                    [style.background]="goalProgress < 20 ? '#e53935' : '#4caf50'"></div>
+                </div>
+
+                <p>
+                  Objectif : {{ monthlyGoal() }} €
+                  — Reste : {{ saved }} €
+                  — {{ goalProgress }}%
+                </p>
+              </div>
+              }
+              <button class="button-action save" (click)="saveGoal()">Enregistrer</button>
+            </div>
+          </div>

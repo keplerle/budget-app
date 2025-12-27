@@ -1,0 +1,82 @@
+            <div class="kpi-row">
+              <div class="kpi-card">
+                <h3>Dépenses</h3>
+                <p>{{ totalExpenses() }} €</p>
+              </div>
+
+              <div class="kpi-card">
+                <h3>Solde</h3>
+                <p>{{ balance }} €</p>
+              </div>
+
+              <div class="kpi-card">
+                <h3>Transactions</h3>
+                <p>{{ filteredExpenses().length }}</p>
+              </div>
+            </div>
+            <div class="kpi-row">
+              <div class="kpi-card">
+                <h3>Total annuel</h3>
+                <p>{{ yearlyTotal }} €</p>
+              </div>
+
+              <div class="kpi-card">
+                <h3>Moyenne mensuelle</h3>
+                <p>{{ yearlyAverage }} €</p>
+              </div>
+            </div>
+            <div class="kpi-row">
+              <div class="kpi-card">
+                <h3>Mois le plus cher</h3>
+                <p>{{ highestMonth.month }}/{{ selectedYear() }} — {{ highestMonth.value }} €</p>
+              </div>
+
+              <div class="kpi-card">
+                <h3>Mois le plus léger</h3>
+                <p>{{ lowestMonth.month }}/{{ selectedYear() }} — {{ lowestMonth.value }} €</p>
+              </div>
+            </div>
+            <div class="kpi-row">
+              @if(monthlyGoal() > 0) {
+              <div class="kpi-card">
+                <h3>Objectif restant</h3>
+                <p>{{ monthlyGoal() - totalExpenses() }} €</p>
+                @if(totalExpenses() > monthlyGoal()) {
+                <p style="color:#e53935; margin-top:8px;">
+                  Objectif dépassé !
+                </p>
+                }
+              </div>
+              }
+              @if(monthlyBudget() > 0) {
+              <div class="kpi-card">
+                <h3>Budget restant</h3>
+                <p>{{ monthlyBudget() - totalExpenses() }} €</p>
+              </div>
+              }
+              @if(selectedMonth()) {
+              <div class="kpi-card">
+                <h3>Évolution</h3>
+
+                <p [style.color]="monthComparisonPercent() >= 0 ? '#4caf50' : '#e53935'">
+                  {{ monthComparisonPercent() }}%
+                </p>
+              </div>
+              <div class="kpi-card">
+                <h3>Dépense moyenne / jour</h3>
+                <p>{{ dailyAverage() }} €</p>
+              </div>
+
+              <div class="kpi-card">
+                <h3>Projection fin de mois</h3>
+                <p [style.color]="endOfMonthProjection() > monthlyBudget() ? '#e53935' : '#4caf50'">
+                  {{ endOfMonthProjection() }} €
+                </p>
+                @if(monthlyBudget() > 0 && endOfMonthProjection() > monthlyBudget()) {
+                <p style="color:#e53935; margin-top:8px;">
+                  ⚠️ Projection : dépassement du budget prévu !
+                </p>
+                }
+              </div>
+              }
+            </div>

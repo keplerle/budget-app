@@ -1,3 +1,8 @@
+@use '../../styles/cards';
+@use '../../styles/buttons';
+@use '../../styles/responsive';
+@use '../../styles/animations';
+
 .kpi-row {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -12,16 +17,16 @@
   border: 1px solid rgba(255, 255, 255, 0.08);
   text-align: center;
   backdrop-filter: blur(10px);
-}
 
-.kpi-card h3 {
-  margin: 0;
-  font-size: 14px;
-  opacity: 0.7;
-}
+  & h3 {
+    margin: 0;
+    font-size: 14px;
+    opacity: 0.7;
+  }
 
-.kpi-card p {
-  margin: 6px 0 0;
-  font-size: 20px;
-  font-weight: 600;
+  & p {
+    margin: 6px 0 0;
+    font-size: 20px;
+    font-weight: 600;
+  }
 }

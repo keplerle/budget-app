@@ -1,0 +1,20 @@
+<div class="section-card">
+    <h3>Ajouter une dépense</h3>
+    <div class="input-group">
+        <input type="number" [(ngModel)]="expenseAmount" #ctrl="ngModel" required />
+        <label>Montant</label>
+    </div>
+
+    <select [(ngModel)]="expenseCategory">
+        <option value="">Choisir une catégorie</option>
+        @for (c of categories(); track c) {
+        <option [value]="c">{{ c }}</option>
+        }
+    </select>
+    <div class="input-group">
+        <input type="date" [(ngModel)]="expenseDate" />
+        <label>Date</label>
+    </div>
+
+    <button class="button-action add-expense" (click)="addExpense()">Ajouter</button>
+</div>

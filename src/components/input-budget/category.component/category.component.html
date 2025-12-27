@@ -1,0 +1,21 @@
+<div class="section-card">
+    <h2>Catégories</h2>
+
+    <div class="category-add">
+        <div class="input-group">
+            <input type="text" [(ngModel)]="newCategory" #ctrl="ngModel" required>
+            <label>Nom de la catégorie</label>
+        </div>
+
+        <button class="button-action add-category" (click)="addCategory()">Ajouter</button>
+    </div>
+
+    <ul class="category-list">
+        @for (c of categories(); track c) {
+        <li>
+            {{ c }}
+            <button class="delete-btn" (click)="removeCategory(c)">×</button>
+        </li>
+        }
+    </ul>
+</div>
