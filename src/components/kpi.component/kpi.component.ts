@@ -1,4 +1,5 @@
 import { Component, input } from '@angular/core';
+import { Expense } from '../../model/expense';
 
 @Component({
   selector: 'app-kpi',

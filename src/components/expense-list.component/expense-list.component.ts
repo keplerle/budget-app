@@ -1,6 +1,7 @@
 import { Component, input, model, output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { UtilService } from '../../services/util.service';
+import { Expense } from '../../model/expense';
 
 @Component({
   selector: 'app-expense-list',

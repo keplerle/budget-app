@@ -2,6 +2,7 @@ import { Component, effect, input, model } from '@angular/core';
 import { Chart, registerables } from 'chart.js';
 import { UtilService } from '../../services/util.service';
 import { FormsModule } from '@angular/forms';
+import { Expense } from '../../model/expense';
 Chart.register(...registerables);
 
 @Component({

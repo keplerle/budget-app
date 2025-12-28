@@ -15,7 +15,7 @@
         <div class="column left">
           <app-monthly-goal [monthlyGoal]="monthlyGoal" [totalExpenses]="totalExpenses"></app-monthly-goal>
           <app-monthly-budget [monthlyBudget]="monthlyBudget" [totalExpenses]="totalExpenses"></app-monthly-budget>
-          <app-income [income]="income" (afterIncomeAdd)="saveToStorage()"></app-income>
+          <app-income [income]="income" (afterIncomeAdd)="saveData()"></app-income>
           <app-expense [categories]="categories" (addExpenseHandler)="addExpense($event)"></app-expense>
           <app-category (onCategoriesChange)="afterCategoriesChange($event)" [categories]="categories"></app-category>
         </div>

@@ -1,8 +1,5 @@
 import { Component, OnInit, signal, viewChild, WritableSignal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
-import * as CryptoJS from 'crypto-js';
 import { HeaderComponent } from "../header.component/header.component";
 import { LockScreenComponent } from "../lock-screen.component/lock-screen.component";
 import { ToolbarComponent } from "../toolbar.component/toolbar.component";
@@ -15,6 +12,11 @@ import { KpiComponent } from '../kpi.component/kpi.component';
 import { ExpenseListComponent } from "../expense-list.component/expense-list.component";
 import { ChartListComponent } from '../chart-list.component/chart-list.component';
 import { UtilService } from '../../services/util.service';
+import { ExportService } from '../../services/export.service';
+import { StorageService } from '../../services/storage.service';
+import { EncryptionService } from '../../services/encryption.service';
+import { ThemeService } from '../../services/theme.service';
+import { Expense } from '../../model/expense';
 
 @Component({
   selector: 'app-budget',
@@ -53,30 +55,20 @@ export class BudgetComponent implements OnInit {
   selectedCategoryForTrend = '';
   selectedYear = new Date().getFullYear().toString();
 
-  isDark = true;
+  get isDark() {
+    return this.themeService.isDark();
+  }
 
   private readonly STORAGE_KEY = 'budget-app-data';
 
-  constructor(readonly utilService: UtilService) {
-    const savedPin = localStorage.getItem('app_pin');
-    if (savedPin) {
-      const bytes = CryptoJS.AES.decrypt(savedPin, 'master_key');
-      this.storedPin = signal(bytes.toString(CryptoJS.enc.Utf8));
-    } else {
-      this.storedPin = signal('');
-    }
-
-    this.isLocked = signal(!!savedPin);
-
-    const encExpenses = localStorage.getItem('expenses');
-    const encCategories = localStorage.getItem('categories');
-    const encIncome = localStorage.getItem('income');
-    const savedBudget = localStorage.getItem('monthlyBudget');
-
-    this.monthlyBudget = savedBudget ? this.decrypt(savedBudget) || 0 : 0;
-    this.expenses = encExpenses ? this.decrypt(encExpenses) || [] : [];
-    this.categories = encCategories ? this.decrypt(encCategories) || [] : [];
-    this.income = encIncome ? this.decrypt(encIncome) || 0 : 0;
+  constructor(
+    readonly exportService: ExportService,
+    readonly utilService: UtilService,
+    private storageService: StorageService,
+    private encryptionService: EncryptionService,
+    private themeService: ThemeService) {
+    this.storedPin = signal(this.storageService.loadPin());
+    this.isLocked = signal(!!this.storedPin());
   }
 
   get totalExpenses() {
@@ -176,15 +168,8 @@ export class BudgetComponent implements OnInit {
   }
 
   ngOnInit() {
-    const saved: 'light' | 'dark' = localStorage.getItem('theme') as 'light' | 'dark';
-
-    if (saved) {
-      this.applyTheme(saved);
-      return;
-    }
-
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    this.applyTheme(prefersDark ? 'dark' : 'light');
+    this.themeService.loadTheme();
+    this.loadData();
   }
 
   lockStatusChange = (locked: boolean) => {
@@ -193,54 +178,38 @@ export class BudgetComponent implements OnInit {
 
   storedPinChange = (newPin: string) => {
     this.storedPin.set(newPin);
+    this.storageService.savePin(newPin);
   }
 
   applyTheme(theme: 'light' | 'dark') {
-    const body = document.body;
-
-    if (theme === 'dark') {
-      body.classList.add('dark-theme');
-    } else {
-      body.classList.remove('dark-theme');
-    }
-
-    localStorage.setItem('theme', theme);
-    this.isDark = theme === 'dark';
+    this.themeService.applyTheme(theme);
   }
 
-  loadFromStorage() {
-    const raw = localStorage.getItem(this.STORAGE_KEY);
-    if (!raw) return;
-
-    try {
-      const data = JSON.parse(raw);
-      this.income = data.income ?? 0;
-      this.expenses = Array.isArray(data.expenses) ? data.expenses : [];
-    } catch {
-      // si JSON cassé, on ignore
-    }
+  loadData() {
+    const key = this.encryptionKey;
+    this.expenses = this.storageService.loadExpenses(key);
+    this.categories = this.storageService.loadCategories(key);
+    this.income = this.storageService.loadIncome(key);
+    this.monthlyBudget = this.storageService.loadMonthlyBudget(key);
   }
 
-  saveToStorage() {
-    const encryptedExpenses = this.encrypt(this.expenses);
-    const encryptedCategories = this.encrypt(this.categories);
-    const encryptedIncome = this.encrypt(this.income);
-    const encryptedBudget = this.encrypt(this.monthlyBudget);
-    localStorage.setItem('monthlyBudget', encryptedBudget);
-    localStorage.setItem('expenses', encryptedExpenses);
-    localStorage.setItem('categories', encryptedCategories);
-    localStorage.setItem('income', encryptedIncome);
+  saveData() {
+    const key = this.encryptionKey;
+    this.storageService.saveExpenses(this.expenses, key);
+    this.storageService.saveCategories(this.categories, key);
+    this.storageService.saveIncome(this.income, key);
+    this.storageService.saveMonthlyBudget(this.monthlyBudget, key);
   }
 
   addExpense(expense: Expense) {
     this.expenses.push(expense);
-    this.saveToStorage();
+    this.saveData();
   }
 
   removeExpense(id: number) {
     const index = this.expenses.findIndex(e => e.id === id);
     this.expenses.splice(index, 1);
-    this.saveToStorage();
+    this.saveData();
   }
 
   updateFilter(selectedMonth: string) {
@@ -249,108 +218,19 @@ export class BudgetComponent implements OnInit {
 
   afterCategoriesChange(categories: string[]) {
     this.categories = categories;
-    const encryptedCategories = this.encrypt(this.categories);
-    localStorage.setItem('categories', encryptedCategories);
-  }
-
-  encrypt(data: any): string {
-    return CryptoJS.AES.encrypt(JSON.stringify(data), this.encryptionKey).toString();
-  }
-
-  decrypt(cipher: string): any {
-    try {
-      const bytes = CryptoJS.AES.decrypt(cipher, this.encryptionKey);
-      const decrypted = bytes.toString(CryptoJS.enc.Utf8);
-      return JSON.parse(decrypted);
-    } catch {
-      return null;
-    }
+    this.saveData();
   }
 
   exportPDF() {
-    const element = document.getElementById('budget-content'); // ton conteneur principal
-    if (element) {
-
-      html2canvas(element, { scale: 2 }).then(canvas => {
-
-        const imgData = canvas.toDataURL('image/png');
-
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        const pageWidth = pdf.internal.pageSize.getWidth();
-        const pageHeight = pdf.internal.pageSize.getHeight();
-
-        const imgWidth = pageWidth;
-        const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-        let heightLeft = imgHeight;
-        let position = 0;
-        const margin = 10;
-        pdf.addImage(imgData, 'PNG', margin, margin, imgWidth - margin * 2, imgHeight);
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-
-        while (heightLeft > 0) {
-          position = heightLeft - imgHeight;
-          pdf.addPage();
-          pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-          heightLeft -= pageHeight;
-        }
-
-        pdf.save('budget.pdf');
-      });
-    }
-  }
-
-  expensesForCSV(exportMode: string) {
-    if (exportMode === 'month' && this.selectedMonth) {
-      return this.filteredExpenses;
-    }
-    return this.expenses;
-  }
-
-  generateCSV(exportMode: string) {
-    const rows = [
-      ['date', 'category', 'amount'] // en-tête
-    ];
-
-    this.expensesForCSV(exportMode).forEach(e => {
-      rows.push([
-        e.date,
-        e.category,
-        e.amount.toString()
-      ]);
-    });
-
-    return rows.map(r => r.join(';')).join('\n');
+    this.exportService.exportPDF('budget-content');
   }
 
   exportCSV(exportMode: string) {
-    const csv = this.generateCSV(exportMode);
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-
-    const a = document.createElement('a');
-    a.href = url;
-    const date = new Date().toISOString().slice(0, 10);
-    a.download = `budget_${date}.csv`;
-    a.click();
-
-    URL.revokeObjectURL(url);
+    this.exportService.exportCSV(this.expenses, exportMode, this.selectedMonth);
   }
 
   exportEncrypted() {
-    const data = this.fullBackup;
-    const encrypted = this.encrypt(data); // AES avec ton PIN
-
-    const blob = new Blob([encrypted], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'budget_secure_backup.json';
-    a.click();
-
-    URL.revokeObjectURL(url);
+    this.exportService.exportEncrypted(this.fullBackup, this.encryptionKey);
   }
 
   importEncrypted(event: any) {
@@ -360,7 +240,7 @@ export class BudgetComponent implements OnInit {
     const reader = new FileReader();
     reader.onload = () => {
       const encryptedText = reader.result as string;
-      const decrypted = this.decrypt(encryptedText);
+      const decrypted = this.encryptionService.decrypt(encryptedText, this.encryptionKey);
 
       if (!decrypted) {
         alert('Impossible de déchiffrer le fichier. PIN incorrect ?');
@@ -371,7 +251,7 @@ export class BudgetComponent implements OnInit {
       this.categories = decrypted.categories || [];
       this.income = decrypted.income || 0;
 
-      this.saveToStorage();
+      this.saveData();
       alert('Données restaurées avec succès !');
     };
 

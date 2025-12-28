@@ -1,5 +1,6 @@
 import { Component, input, output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Expense } from '../../../model/expense';
 
 @Component({
   selector: 'app-expense',
