@@ -17,8 +17,4 @@ export class MonthlyBudgetComponent {
     if (!monthlyBudget) return 0;
     return Math.min(100, Math.round((totalExpenses / monthlyBudget) * 100));
   }
-
-  saveBudget() {
-    localStorage.setItem('monthlyBudget', String(this.monthlyBudget));
-  }
 }

@@ -54,6 +54,17 @@ export class StorageService {
     return enc ? this.encryption.decrypt(enc, key) || 0 : 0;
   }
 
+  // Monthly Goal
+  saveMonthlyGoal(goal: number, key: string) {
+    const encrypted = this.encryption.encrypt(goal, key);
+    localStorage.setItem('monthlyGoal', encrypted);
+  }
+
+  loadMonthlyGoal(key: string): number {
+    const enc = localStorage.getItem('monthlyGoal');
+    return enc ? this.encryption.decrypt(enc, key) || 0 : 0;
+  }
+
   // PIN
   savePin(pin: string) {
     const encrypted = CryptoJS.AES.encrypt(pin, 'master_key').toString();

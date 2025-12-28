@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, viewChild, WritableSignal } from '@angular/core';
+import { Component, OnInit, signal, viewChild, WritableSignal, computed } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HeaderComponent } from "../header.component/header.component";
 import { LockScreenComponent } from "../lock-screen.component/lock-screen.component";
@@ -16,6 +16,8 @@ import { ExportService } from '../../services/export.service';
 import { StorageService } from '../../services/storage.service';
 import { EncryptionService } from '../../services/encryption.service';
 import { ThemeService } from '../../services/theme.service';
+import { BudgetDataService } from '../../services/budget-data.service';
+import { BudgetCalculationService } from '../../services/budget-calculation.service';
 import { Expense } from '../../model/expense';
 
 @Component({
@@ -44,13 +46,6 @@ export class BudgetComponent implements OnInit {
   isLocked: WritableSignal<boolean>;
   storedPin: WritableSignal<string>;
 
-  categories: string[] = [];
-  expenses: Expense[] = [];
-
-  income = 0;
-  monthlyGoal = 0;
-  monthlyBudget = 0;
-
   selectedMonth = '';
   selectedCategoryForTrend = '';
   selectedYear = new Date().getFullYear().toString();
@@ -66,93 +61,28 @@ export class BudgetComponent implements OnInit {
     readonly utilService: UtilService,
     private storageService: StorageService,
     private encryptionService: EncryptionService,
-    private themeService: ThemeService) {
+    private themeService: ThemeService,
+    readonly dataService: BudgetDataService,
+    private calcService: BudgetCalculationService) {
     this.storedPin = signal(this.storageService.loadPin());
     this.isLocked = signal(!!this.storedPin());
   }
 
-  get totalExpenses() {
-    return this.filteredExpenses.reduce((sum, e) => sum + e.amount, 0);
-  }
+  filteredExpenses = computed(() => this.calcService.getFilteredExpenses(this.dataService.expenses(), this.selectedMonth));
 
-  get filteredExpenses() {
-    if (!this.selectedMonth) return this.expenses;
+  totalExpenses = computed(() => this.calcService.getTotalExpenses(this.filteredExpenses()));
 
-    return this.expenses.filter(e =>
-      e.date.startsWith(this.selectedMonth)
-    );
-  }
+  groupedExpenses = computed(() => this.calcService.getGroupedExpenses(this.filteredExpenses()));
 
-  get groupedExpenses() {
-    const groups: Record<string, number> = {};
+  previousMonthTotal = computed(() => this.calcService.getPreviousMonthTotal(this.dataService.expenses(), this.selectedMonth));
 
-    this.filteredExpenses.forEach(e => {
-      groups[e.category] = (groups[e.category] || 0) + e.amount;
-    });
+  monthComparisonPercent = computed(() => this.calcService.getMonthComparisonPercent(this.totalExpenses(), this.previousMonthTotal()));
 
-    return groups;
-  }
+  yearlyTotals = computed(() => this.calcService.getYearlyTotals(this.dataService.expenses(), this.selectedYear));
 
-  get previousMonthTotal() {
-    if (!this.selectedMonth) return 0;
+  dailyAverage = computed(() => this.calcService.getDailyAverage(this.filteredExpenses(), this.selectedMonth));
 
-    const prev = this.utilService.getPreviousMonth(this.selectedMonth);
-
-    return this.expenses
-      .filter(e => e.date?.startsWith(prev))
-      .reduce((sum, e) => sum + e.amount, 0);
-  }
-
-  get monthComparisonPercent() {
-    const prev = this.previousMonthTotal;
-    if (prev === 0) return 0;
-
-    return Math.round(((this.totalExpenses - prev) / prev) * 100);
-  }
-
-  get yearlyTotals() {
-    const totals = Array(12).fill(0);
-
-    this.expenses.forEach(e => {
-      if (!e.date) return;
-
-      const year = e.date.slice(0, 4);
-      if (year !== this.selectedYear) return;
-
-      const month = Number(e.date.slice(5, 7)) - 1;
-      totals[month] += e.amount;
-    });
-
-    return totals;
-  }
-
-  get dailyAverage() {
-    if (!this.selectedMonth) return 0;
-
-    const today = new Date();
-    const [year, month] = this.selectedMonth.split('-').map(Number);
-
-    // Si on regarde un mois passé → on prend le nombre total de jours du mois
-    const isCurrentMonth =
-      today.getFullYear() === year && today.getMonth() + 1 === month;
-
-    const daysPassed = isCurrentMonth
-      ? today.getDate()
-      : new Date(year, month, 0).getDate();
-
-    const total = this.filteredExpenses.reduce((a, b) => a + b.amount, 0);
-
-    return Math.round(total / daysPassed);
-  }
-
-  get endOfMonthProjection() {
-    if (!this.selectedMonth) return 0;
-
-    const [year, month] = this.selectedMonth.split('-').map(Number);
-    const daysInMonth = new Date(year, month, 0).getDate();
-
-    return Math.round(this.dailyAverage * daysInMonth);
-  }
+  endOfMonthProjection = computed(() => this.calcService.getEndOfMonthProjection(this.dailyAverage(), this.selectedMonth));
 
   get encryptionKey() {
     return this.storedPin() || 'default_key';
@@ -160,16 +90,16 @@ export class BudgetComponent implements OnInit {
 
   get fullBackup() {
     return {
-      expenses: this.expenses,
-      categories: this.categories,
-      income: this.income,
+      expenses: this.dataService.expenses(),
+      categories: this.dataService.categories(),
+      income: this.dataService.income(),
       timestamp: new Date().toISOString()
     };
   }
 
   ngOnInit() {
     this.themeService.loadTheme();
-    this.loadData();
+    this.dataService.loadData(this.encryptionKey);
   }
 
   lockStatusChange = (locked: boolean) => {
@@ -185,30 +115,17 @@ export class BudgetComponent implements OnInit {
     this.themeService.applyTheme(theme);
   }
 
-  loadData() {
-    const key = this.encryptionKey;
-    this.expenses = this.storageService.loadExpenses(key);
-    this.categories = this.storageService.loadCategories(key);
-    this.income = this.storageService.loadIncome(key);
-    this.monthlyBudget = this.storageService.loadMonthlyBudget(key);
-  }
-
   saveData() {
-    const key = this.encryptionKey;
-    this.storageService.saveExpenses(this.expenses, key);
-    this.storageService.saveCategories(this.categories, key);
-    this.storageService.saveIncome(this.income, key);
-    this.storageService.saveMonthlyBudget(this.monthlyBudget, key);
+    this.dataService.saveData(this.encryptionKey);
   }
 
   addExpense(expense: Expense) {
-    this.expenses.push(expense);
+    this.dataService.addExpense(expense);
     this.saveData();
   }
 
   removeExpense(id: number) {
-    const index = this.expenses.findIndex(e => e.id === id);
-    this.expenses.splice(index, 1);
+    this.dataService.removeExpense(id);
     this.saveData();
   }
 
@@ -217,7 +134,7 @@ export class BudgetComponent implements OnInit {
   }
 
   afterCategoriesChange(categories: string[]) {
-    this.categories = categories;
+    this.dataService.updateCategories(categories);
     this.saveData();
   }
 
@@ -226,7 +143,7 @@ export class BudgetComponent implements OnInit {
   }
 
   exportCSV(exportMode: string) {
-    this.exportService.exportCSV(this.expenses, exportMode, this.selectedMonth);
+    this.exportService.exportCSV(this.dataService.expenses(), exportMode, this.selectedMonth);
   }
 
   exportEncrypted() {
@@ -247,9 +164,9 @@ export class BudgetComponent implements OnInit {
         return;
       }
 
-      this.expenses = decrypted.expenses || [];
-      this.categories = decrypted.categories || [];
-      this.income = decrypted.income || 0;
+      this.dataService.expenses.set(decrypted.expenses || []);
+      this.dataService.categories.set(decrypted.categories || []);
+      this.dataService.income.set(decrypted.income || 0);
 
       this.saveData();
       alert('Données restaurées avec succès !');

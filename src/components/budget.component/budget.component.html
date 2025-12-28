@@ -13,30 +13,20 @@
 
       <div class="budget-layout">
         <div class="column left">
-          <app-monthly-goal [monthlyGoal]="monthlyGoal" [totalExpenses]="totalExpenses"></app-monthly-goal>
-          <app-monthly-budget [monthlyBudget]="monthlyBudget" [totalExpenses]="totalExpenses"></app-monthly-budget>
-          <app-income [income]="income" (afterIncomeAdd)="saveData()"></app-income>
-          <app-expense [categories]="categories" (addExpenseHandler)="addExpense($event)"></app-expense>
-          <app-category (onCategoriesChange)="afterCategoriesChange($event)" [categories]="categories"></app-category>
+          <app-monthly-goal [monthlyGoal]="dataService.monthlyGoal()" [totalExpenses]="totalExpenses()" (monthlyGoalChange)="dataService.monthlyGoal.set($event ?? 0); saveData()"></app-monthly-goal>
+          <app-monthly-budget [monthlyBudget]="dataService.monthlyBudget()" [totalExpenses]="totalExpenses()" (monthlyBudgetChange)="dataService.monthlyBudget.set($event ?? 0); saveData()"></app-monthly-budget>
+          <app-income [income]="dataService.income()" (incomeChange)="dataService.income.set($event ?? 0); saveData()"></app-income>
+          <app-expense [categories]="dataService.categories()" (addExpenseHandler)="addExpense($event)"></app-expense>
+          <app-category (onCategoriesChange)="afterCategoriesChange($event)" [categories]="dataService.categories()"></app-category>
         </div>
 
         <div class="column right">
           <div id="budget-content">
-            <app-kpi [yearlyTotals]="yearlyTotals" [income]="income" [totalExpenses]="totalExpenses"
-              [monthlyBudget]="monthlyBudget" [monthlyGoal]="monthlyGoal" [dailyAverage]="dailyAverage"
-              [selectedYear]="selectedYear" [selectedMonth]="selectedMonth"
-              [endOfMonthProjection]="endOfMonthProjection" [monthComparisonPercent]="monthComparisonPercent"></app-kpi>
+            <app-kpi [yearlyTotals]="yearlyTotals()" [income]="dataService.income()" [totalExpenses]="totalExpenses()" [monthlyBudget]="dataService.monthlyBudget()" [monthlyGoal]="dataService.monthlyGoal()" [dailyAverage]="dailyAverage()" [selectedYear]="selectedYear" [selectedMonth]="selectedMonth" [endOfMonthProjection]="endOfMonthProjection()" [monthComparisonPercent]="monthComparisonPercent()"></app-kpi>
 
-            <app-expense-list [expenses]="expenses" [filteredExpenses]="filteredExpenses"
-              [groupedExpenses]="groupedExpenses" [filteredExpenses]="filteredExpenses" [selectedMonth]="selectedMonth"
-              (removeExpenseChange)="removeExpense($event)" (updatedFilterChange)="updateFilter($event)"> </app-expense-list>
+            <app-expense-list [expenses]="dataService.expenses()" [filteredExpenses]="filteredExpenses()" [groupedExpenses]="groupedExpenses()" [filteredExpenses]="filteredExpenses()" [selectedMonth]="selectedMonth" (removeExpenseChange)="removeExpense($event)" (updatedFilterChange)="updateFilter($event)"></app-expense-list>
 
-            <app-chart-list #chartList [categories]="categories" [expenses]="expenses"
-              [groupedExpenses]="groupedExpenses" [selectedMonth]="selectedMonth" [selectedYear]="selectedYear"
-              [selectedCategoryForTrend]="selectedCategoryForTrend" [totalExpenses]="totalExpenses"
-              [monthlyBudget]="monthlyBudget" [previousMonthTotal]="previousMonthTotal"
-              [endOfMonthProjection]="endOfMonthProjection" [yearlyTotals]="yearlyTotals">
-            </app-chart-list>
+            <app-chart-list #chartList [categories]="dataService.categories()" [expenses]="dataService.expenses()" [groupedExpenses]="groupedExpenses()" [selectedMonth]="selectedMonth" [selectedYear]="selectedYear" [selectedCategoryForTrend]="selectedCategoryForTrend" [totalExpenses]="totalExpenses()" [monthlyBudget]="dataService.monthlyBudget()" [previousMonthTotal]="previousMonthTotal()" [endOfMonthProjection]="endOfMonthProjection()" [yearlyTotals]="yearlyTotals()"></app-chart-list>
 
           </div>
         </div>

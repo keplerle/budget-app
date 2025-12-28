@@ -9,9 +9,4 @@ import { FormsModule } from '@angular/forms';
 })
 export class IncomeComponent {
     readonly income = model<number>();
-    readonly afterIncomeAdd = output<void>();
-
-    afterIncomeAddEmit() {
-        this.afterIncomeAdd.emit();
-    }
 }

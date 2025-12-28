@@ -18,10 +18,6 @@ export class MonthlyGoalComponent {
     return goal - totalExpenses;
   }
 
-  saveGoal() {
-    localStorage.setItem('monthlyGoal', String(this.monthlyGoal()));
-  }
-
   get goalProgress() {
     const goal = this.monthlyGoal();
 
